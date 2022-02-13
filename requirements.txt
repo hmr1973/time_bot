@@ -1,0 +1,3 @@
+instauto
+pillow
+orjson
