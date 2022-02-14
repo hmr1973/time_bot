@@ -20,7 +20,7 @@ W,H = (1080,1080)
 ##  'https://source.unsplash.com/1600x1600/?tech,bigdata,innovation,techonology,money,luxury,entrepreneurship',
 
 urllib.request.urlretrieve(
-  'https://source.unsplash.com/random',
+  'https://source.unsplash.com/random/1080x1080',
    "gfg.png")
   
 img = Image.open("gfg.png")
