@@ -56,9 +56,6 @@ else:
     client.log_in()
     client.save_to_disk('./.instauto.save')
 
-post = ps.PostFeed(
-    path='./cur_time.jpg',
-    caption=text
-)
+post = ps.PostFeed(path='./cur_time.jpg',caption=text)
 resp = client.post_post(post, 80)
 print("Success: ", resp.ok)
