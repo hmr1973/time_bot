@@ -1,7 +1,7 @@
 import feedparser
 from random import seed
 from random import randint
-
+import textwrap
 
 from PIL import Image 
 from PIL import ImageFont
@@ -12,13 +12,8 @@ from PIL import Image
 
 W,H = (1080,1080)
 
-## https://source.unsplash.com/1600x1600/?girl,teen,makeup,nails,beauty,perfurme
-
-## https://picsum.photos/1600/1600
-##  'https://source.unsplash.com/1600x1600/?tech,bigdata,innovation,techonology,money,luxury,entrepreneurship',
-
 urllib.request.urlretrieve(
-  'https://source.unsplash.com/1080x1080/?tech,bigdata,innovation,techonology,money,luxury,entrepreneurship,tech,technology,iphone,technews,gadgets,innovation,apple,android,smartphone,business,techno,instatech,programming,engineering,electronics,coding,gadget,computer,instagood,software,gaming,mobile,design',
+  'https://source.unsplash.com/1080x1080/?black',
    "gfg.png")
   
 img = Image.open("gfg.png")
@@ -38,9 +33,13 @@ corpo = corpo.replace("[&#8230;]", "...")
 
 text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\nFollow me @hmr1973maia \n\n#bigdata #weworklabs #entrepreneur #innovation #cycling #datascience #innovation #technology #tech #design #business #engineering #startup #entrepreneur #science #entrepreneurship #future #marketing #creativity #architecture #sustainability #inspiration #ai #art #gadgets #digital #motivation #automation'
 
-#text = 'Follow me @hmr1973maia \n\n #bigdata #weworklabs #entrepreneur #innovation #cycling #datascience #innovation #technology #tech #design #business #engineering #startup #entrepreneur #science #entrepreneurship #future #marketing #creativity #architecture #sustainability #inspiration #ai #art #gadgets #digital #motivation #automation'
+font = ImageFont.truetype("Roboto-Medium.ttf", 100)
+
+textwrapped = textwrap.wrap(titulo, width=24)
+draw.text((0,0), '\n'.join(textwrapped), font=font, fill="#FFA500")
 
 img.save('cur_time.jpg')
+
 
 
 import os
