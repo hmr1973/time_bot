@@ -33,7 +33,7 @@ corpo = corpo.replace("[&#8230;]", "...")
 
 text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\nFollow me @hmr1973maia \n\n#bigdata #innovation #cycling #datascience #technology #tech #design #business #entrepreneur #entrepreneurship #future #marketing #creativity #sustainability #inspiration #gadgets #digital #motivation #automation'
 
-print(text)
+#print(text)
 
 font = ImageFont.truetype("Roboto-Medium.ttf", 70)
 
