@@ -1,3 +1,4 @@
 instauto
 pillow
 orjson
+feedparser
