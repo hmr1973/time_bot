@@ -34,7 +34,7 @@ corpo1 = corpo1.replace("Quero saber mais sobre como ter sucesso no mundo digita
 
 corpo = corpo.replace("[&#8230;]", "...")
 
-text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\nFollow me @hmr1973maia \n\n#bigdata #weworklabs #entrepreneur #innovation #cycling #datascience #innovation #technology #tech #design #business #engineering #startup #entrepreneur #science #entrepreneurship #future #marketing #creativity #architecture #sustainability #inspiration #ai #art #gadgets #digital #motivation #automation'
+text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\nFollow me @hmr1973maia'
 
 font = ImageFont.truetype("Roboto-Medium.ttf", 60)
 font1 = ImageFont.truetype("Roboto-Medium.ttf", 40)
