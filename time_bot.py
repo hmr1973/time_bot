@@ -1,8 +1,8 @@
+import math
 import feedparser
 from random import seed
 from random import randint
 import textwrap
-
 from PIL import Image 
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -10,10 +10,8 @@ from datetime import datetime
 import urllib.request
 from PIL import Image
 
-W,H = (1080,1080)
-
 urllib.request.urlretrieve(
-  'https://source.unsplash.com/1080x1080/?black',
+  'https://source.unsplash.com/1080x1080/',
    "gfg.png")
   
 img = Image.open("gfg.png")
@@ -21,6 +19,13 @@ img = Image.open("gfg.png")
 draw = ImageDraw.Draw(img)
 
 d = feedparser.parse('https://sucesso.hmr1973.com/feed/')
+ 
+w, h = 1080, 390
+shape = [(0, 0), (w, h)]
+ 
+# create  rectangleimage
+img1 = ImageDraw.Draw(img)  
+draw.rectangle(shape, fill ="#000000", outline ="black")
 
 qtde = (len(d['entries']))-1
 #seed(1)
@@ -40,7 +45,7 @@ font = ImageFont.truetype("Roboto-Medium.ttf", 65)
 font1 = ImageFont.truetype("Roboto-Medium.ttf", 40)
 
 textwrapped = textwrap.wrap(titulo, width=30)
-draw.text((0,0), '\n'.join(textwrapped), font=font, fill="#FFA500")
+draw.text((0,10), '\n'.join(textwrapped), font=font, fill="#FFA500")
 
 textwrapped1 = textwrap.wrap(corpo1, width=50)
 #draw.text((0,700), '\n'.join(textwrapped1), font=font1, fill="#FFA500")
