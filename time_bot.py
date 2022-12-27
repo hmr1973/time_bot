@@ -33,21 +33,21 @@ value = randint(0, qtde)
 
 titulo = d['entries'][value]['title'] 
 corpo = d['entries'][value]['description'] 
-corpo1 = d['entries'][value]['description']
+#corpo1 = d['entries'][value]['description']
 
-corpo1 = corpo1.replace("Quero saber mais sobre como ter sucesso no mundo digital", "")
+corpo = corpo.replace("Quero saber mais sobre como ter sucesso no mundo digital", "")
 
 corpo = corpo.replace("[&#8230;]", "...")
 
 text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\n#love #instagood #photooftheday #beautiful #followme #happy #picoftheday #instadaily #fun #instalike #likeforlike #follow #selfie #summer #art #fashion #food #travel #nature #fitness #beauty #workout #friends #family #instamood #photography'
 
 font = ImageFont.truetype("Roboto-Medium.ttf", 65)
-font1 = ImageFont.truetype("Roboto-Medium.ttf", 40)
+#font1 = ImageFont.truetype("Roboto-Medium.ttf", 40)
 
 textwrapped = textwrap.wrap(titulo, width=30)
 draw.text((0,10), '\n'.join(textwrapped), font=font, fill="#FFA500")
 
-textwrapped1 = textwrap.wrap(corpo1, width=50)
+#textwrapped1 = textwrap.wrap(corpo1, width=50)
 #draw.text((0,700), '\n'.join(textwrapped1), font=font1, fill="#FFA500")
 
 img.save('cur_time.jpg')
