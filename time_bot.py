@@ -20,7 +20,7 @@ draw = ImageDraw.Draw(img)
 
 d = feedparser.parse('https://sucesso.hmr1973.com/feed/')
  
-w, h = 1080, 390
+w, h = 1080, 300
 shape = [(0, 0), (w, h)]
  
 # create  rectangleimage
