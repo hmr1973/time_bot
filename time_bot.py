@@ -11,7 +11,7 @@ import urllib.request
 from PIL import Image
 
 urllib.request.urlretrieve(
-  'https://source.unsplash.com/random/?a',
+  'https://source.unsplash.com/featured/1080x1080',
    "gfg.png")
   
 img = Image.open("gfg.png")
