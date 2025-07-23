@@ -1,71 +1,128 @@
 import math
 import feedparser
-from random import seed
 from random import randint
 import textwrap
-from PIL import Image 
-from PIL import ImageFont
-from PIL import ImageDraw
-from datetime import datetime
+from PIL import Image, ImageFont, ImageDraw
 import urllib.request
-from PIL import Image
-
-urllib.request.urlretrieve(
-  'https://picsum.photos/1080/1080',
-   "gfg.png")
-  
-img = Image.open("gfg.png")
-
-draw = ImageDraw.Draw(img)
-
-d = feedparser.parse('https://sucesso.hmr1973.com/feed/')
- 
-w, h = 1080, 300
-shape = [(0, 0), (w, h)]
- 
-# create  rectangleimage
-img1 = ImageDraw.Draw(img)  
-draw.rectangle(shape, fill ="#000000", outline ="black")
-
-qtde = (len(d['entries']))-1
-#seed(1)
-value = randint(0, qtde)
-
-titulo = d['entries'][value]['title'] 
-corpo = d['entries'][value]['description'] 
-#corpo1 = d['entries'][value]['description']
-
-corpo = corpo.replace("Quero saber mais sobre como ter sucesso no mundo digital", "")
-
-corpo = corpo.replace("[&#8230;]", "...")
-
-text = '\n\n' + titulo + '\n\n' + corpo + '\n\nfonte: https://sucesso.hmr1973.com/ \n\n#love #instagood #photooftheday #beautiful #followme #happy #picoftheday #instadaily #fun #instalike #likeforlike #follow #selfie #summer #art #fashion #food #travel #nature #fitness #beauty #workout #friends #family #instamood #photography'
-
-font = ImageFont.truetype("Roboto-Medium.ttf", 65)
-#font1 = ImageFont.truetype("Roboto-Medium.ttf", 40)
-
-textwrapped = textwrap.wrap(titulo, width=30)
-draw.text((0,10), '\n'.join(textwrapped), font=font, fill="#FFA500")
-
-#textwrapped1 = textwrap.wrap(corpo1, width=50)
-#draw.text((0,700), '\n'.join(textwrapped1), font=font1, fill="#FFA500")
-
-img.save('cur_time.jpg')
-
 import os
-
 from instauto.api.client import ApiClient
-from instauto.api import structs as st
 from instauto.api.actions import post as ps
 
+# Constantes
+IMAGE_URL = 'https://picsum.photos/1080/1080'
+FONT_PATH = "Roboto-Medium.ttf"  # Certifique-se de que esta fonte existe no sistema
+OUTPUT_IMAGE = 'cur_time.jpg'
+RSS_FEED_URL = 'https://sucesso.hmr1973.com/feed/'
+TEXT_COLOR = "#FFA500"  # Laranja
+FONT_SIZE_TITLE = 65
+RECTANGLE_HEIGHT = 300
 
-if os.path.isfile('./.instauto.save'):
-    client = ApiClient.initiate_from_file('./.instauto.save')
-else:
-    client = ApiClient(username=os.environ.get("INSTAUTO_USER") or "hmr1973maia", password=os.environ.get("INSTAUTO_PASS") or "Mkonji321????")
-    client.log_in()
-    client.save_to_disk('./.instauto.save')
 
-post = ps.PostFeed(path='./cur_time.jpg',caption=text)
-resp = client.post_post(post, 80)
-print("Success: ", resp.ok)
+def download_image(url, output_path):
+    """Baixa uma imagem de uma URL e a salva localmente."""
+    try:
+        urllib.request.urlretrieve(url, output_path)
+        return True
+    except Exception as e:
+        print(f"Erro ao baixar imagem: {e}")
+        return False
+
+
+def fetch_rss_feed(url):
+    """Obtém e analisa o feed RSS."""
+    try:
+        feed = feedparser.parse(url)
+        if not feed.entries:
+            raise ValueError("Nenhuma entrada encontrada no feed RSS")
+        return feed
+    except Exception as e:
+        print(f"Erro ao obter feed RSS: {e}")
+        return None
+
+
+def create_image_with_text(background_path, feed_entry):
+    """Cria uma imagem com texto sobreposto do feed RSS."""
+    try:
+        # Abre a imagem de fundo
+        img = Image.open(background_path)
+        draw = ImageDraw.Draw(img)
+
+        # Desenha um retângulo preto semitransparente no topo
+        w, h = img.size
+        shape = [(0, 0), (w, RECTANGLE_HEIGHT)]
+        draw.rectangle(shape, fill=(0, 0, 0, 180))  # Preto semitransparente
+
+        # Carrega a fonte
+        try:
+            font = ImageFont.truetype(FONT_PATH, FONT_SIZE_TITLE)
+        except IOError:
+            print("Arquivo de fonte não encontrado, usando fonte padrão")
+            font = ImageFont.load_default()
+
+        # Prepara o texto
+        titulo = feed_entry['title']
+        corpo = feed_entry['description'].replace(
+            "Quero saber mais sobre como ter sucesso no mundo digital", ""
+        ).replace("[…]", "...")
+
+        caption = f"\n\n{titulo}\n\n{corpo}\n\nfonte: {RSS_FEED_URL}\n\n#love #instagood #photooftheday #beautiful #followme #happy #picoftheday #instadaily #fun #instalike #likeforlike #follow #selfie #summer #art #fashion #food #travel #nature #fitness #beauty #workout #friends #family #instamood #photography"
+
+        # Quebra e desenha o título
+        textwrapped = textwrap.wrap(titulo, width=30)
+        draw.text((10, 10), '\n'.join(textwrapped), font=font, fill=TEXT_COLOR)
+
+        # Salva a imagem
+        img.save(OUTPUT_IMAGE)
+        return caption
+    except Exception as e:
+        print(f"Erro ao criar imagem: {e}")
+        return None
+
+
+def post_to_instagram(image_path, caption, username, password):
+    """Posta a imagem no Instagram usando instauto."""
+    try:
+        if os.path.isfile('./.instauto.save'):
+            client = ApiClient.initiate_from_file('./.instauto.save')
+        else:
+            if not username or not password:
+                raise ValueError("Credenciais do Instagram não fornecidas")
+            client = ApiClient(username=username, password=password)
+            client.log_in()
+            client.save_to_disk('./.instauto.save')
+
+        post = ps.PostFeed(path=image_path, caption=caption)
+        resp = client.post_post(post, quality=80)
+        print("Sucesso: ", resp.ok)
+        return resp.ok
+    except Exception as e:
+        print(f"Erro ao postar no Instagram: {e}")
+        return False
+
+
+def main():
+    # Baixa a imagem de fundo
+    if not download_image(IMAGE_URL, "background.png"):
+        return
+
+    # Obtém o feed RSS
+    feed = fetch_rss_feed(RSS_FEED_URL)
+    if not feed:
+        return
+
+    # Seleciona uma entrada aleatória
+    entry = feed.entries[randint(0, len(feed.entries) - 1)]
+
+    # Cria a imagem com texto
+    caption = create_image_with_text("background.png", entry)
+    if not caption:
+        return
+
+    # Posta no Instagram com as credenciais fornecidas
+    username = "hmr1973maia"  # Substitua pelo seu nome de usuário real
+    password = "Mkonji321????"  # Substitua pela sua senha real
+    post_to_instagram(OUTPUT_IMAGE, caption, username, password)
+
+
+if __name__ == "__main__":
+    main()
