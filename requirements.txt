@@ -2,3 +2,5 @@ instauto
 pillow
 orjson
 feedparser
+pyotp
+dotenv
