@@ -7,6 +7,11 @@ import urllib.request
 import os
 from instauto.api.client import ApiClient
 from instauto.api.actions import post as ps
+import pyotp
+from dotenv import load_dotenv
+
+# Carrega variáveis de ambiente
+load_dotenv()
 
 # Constantes
 IMAGE_URL = 'https://picsum.photos/1080/1080'
@@ -17,7 +22,6 @@ TEXT_COLOR = "#FFA500"  # Laranja
 FONT_SIZE_TITLE = 65
 RECTANGLE_HEIGHT = 300
 
-
 def download_image(url, output_path):
     """Baixa uma imagem de uma URL e a salva localmente."""
     try:
@@ -26,7 +30,6 @@ def download_image(url, output_path):
     except Exception as e:
         print(f"Erro ao baixar imagem: {e}")
         return False
-
 
 def fetch_rss_feed(url):
     """Obtém e analisa o feed RSS."""
@@ -38,7 +41,6 @@ def fetch_rss_feed(url):
     except Exception as e:
         print(f"Erro ao obter feed RSS: {e}")
         return None
-
 
 def create_image_with_text(background_path, feed_entry):
     """Cria uma imagem com texto sobreposto do feed RSS."""
@@ -78,16 +80,29 @@ def create_image_with_text(background_path, feed_entry):
         print(f"Erro ao criar imagem: {e}")
         return None
 
-
-def post_to_instagram(image_path, caption, username, password):
+def post_to_instagram(image_path, caption, username, password, two_factor_seed):
     """Posta a imagem no Instagram usando instauto."""
     try:
+        # Valida a chave 2FA e gera o código para depuração
+        if two_factor_seed:
+            try:
+                totp = pyotp.TOTP(two_factor_seed)
+                two_factor_code = totp.now()
+                print(f"Código 2FA gerado: {two_factor_code} (insira manualmente se solicitado)")
+            except Exception as e:
+                print(f"Erro ao gerar código 2FA: {e}")
+
         if os.path.isfile('./.instauto.save'):
             client = ApiClient.initiate_from_file('./.instauto.save')
         else:
             if not username or not password:
                 raise ValueError("Credenciais do Instagram não fornecidas")
-            client = ApiClient(username=username, password=password)
+            # Configura o cliente
+            client = ApiClient(
+                username=username,
+                password=password
+            )
+            # Faz login sem passar two_factor_code diretamente
             client.log_in()
             client.save_to_disk('./.instauto.save')
 
@@ -98,7 +113,6 @@ def post_to_instagram(image_path, caption, username, password):
     except Exception as e:
         print(f"Erro ao postar no Instagram: {e}")
         return False
-
 
 def main():
     # Baixa a imagem de fundo
@@ -119,10 +133,10 @@ def main():
         return
 
     # Posta no Instagram com as credenciais fornecidas
-    username = "hmr1973maia"  # Substitua pelo seu nome de usuário real
-    password = "Mkonji321????"  # Substitua pela sua senha real
-    post_to_instagram(OUTPUT_IMAGE, caption, username, password)
-
+    username = os.getenv("INSTAGRAM_USERNAME") or "hmr1973maia"  # Substitua pelo seu nome de usuário
+    password = os.getenv("INSTAGRAM_PASSWORD") or "Mkonji321????"  # Substitua pela sua senha
+    two_factor_seed = os.getenv("INSTAGRAM_2FA_SEED") or "BW64LFQ6L54HTGDKMED5E73J7HY46QVH"  # Substitua pela chave 2FA
+    post_to_instagram(OUTPUT_IMAGE, caption, username, password, two_factor_seed)
 
 if __name__ == "__main__":
     main()
