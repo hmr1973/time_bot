@@ -1,142 +1,329 @@
-import math
-import feedparser
-from random import randint
-import textwrap
-from PIL import Image, ImageFont, ImageDraw
-import urllib.request
 import os
-from instauto.api.client import ApiClient
-from instauto.api.actions import post as ps
-import pyotp
-from dotenv import load_dotenv
+import textwrap
+import random
+import urllib.request
+from io import BytesIO
 
-# Carrega variáveis de ambiente
+import feedparser
+from dotenv import load_dotenv
+from PIL import Image, ImageDraw, ImageFont
+from instagrapi import Client
+
+# ============================================
+# CONFIGURAÇÕES
+# ============================================
+
 load_dotenv()
 
-# Constantes
-IMAGE_URL = 'https://picsum.photos/1080/1080'
-FONT_PATH = "Roboto-Medium.ttf"  # Certifique-se de que esta fonte existe no sistema
-OUTPUT_IMAGE = 'cur_time.jpg'
-RSS_FEED_URL = 'https://sucesso.hmr1973.com/feed/'
-TEXT_COLOR = "#FFA500"  # Laranja
-FONT_SIZE_TITLE = 65
-RECTANGLE_HEIGHT = 300
+RSS_FEED_URL = "https://sucesso.hmr1973.com/feed/"
+IMAGE_URL = "https://picsum.photos/1080/1080"
 
-def download_image(url, output_path):
-    """Baixa uma imagem de uma URL e a salva localmente."""
+OUTPUT_IMAGE = "instagram_post.jpg"
+SESSION_FILE = "session.json"
+
+FONT_PATH = "Roboto-Medium.ttf"
+
+FONT_SIZE_TITLE = 55
+FONT_SIZE_BODY = 32
+
+TEXT_COLOR = (255, 165, 0)
+BODY_COLOR = (255, 255, 255)
+
+RECTANGLE_HEIGHT = 420
+
+INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME")
+INSTAGRAM_PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
+
+# ============================================
+# DOWNLOAD IMAGEM
+# ============================================
+
+def download_image(url):
     try:
-        urllib.request.urlretrieve(url, output_path)
-        return True
+        response = urllib.request.urlopen(url)
+        return Image.open(BytesIO(response.read())).convert("RGBA")
+
     except Exception as e:
         print(f"Erro ao baixar imagem: {e}")
-        return False
+        return None
 
-def fetch_rss_feed(url):
-    """Obtém e analisa o feed RSS."""
+
+# ============================================
+# RSS
+# ============================================
+
+def fetch_feed(url):
     try:
         feed = feedparser.parse(url)
-        if not feed.entries:
-            raise ValueError("Nenhuma entrada encontrada no feed RSS")
-        return feed
-    except Exception as e:
-        print(f"Erro ao obter feed RSS: {e}")
-        return None
 
-def create_image_with_text(background_path, feed_entry):
-    """Cria uma imagem com texto sobreposto do feed RSS."""
+        if not feed.entries:
+            raise Exception("Feed sem entradas")
+
+        return feed.entries
+
+    except Exception as e:
+        print(f"Erro RSS: {e}")
+        return []
+
+
+# ============================================
+# TEXTO
+# ============================================
+
+def prepare_caption(entry):
+
+    titulo = entry.get("title", "")
+
+    corpo = entry.get("summary", "")
+    corpo = corpo.replace(
+        "Quero saber mais sobre como ter sucesso no mundo digital",
+        ""
+    )
+
+    corpo = corpo.replace("[…]", "...")
+
+    hashtags = """
+#sucesso #marketingdigital #empreendedorismo #negocios
+#motivacao #mindset #empreender #instagram
+#marketing #business #digital #foco
+"""
+
+    caption = f"""
+{titulo}
+
+{corpo}
+
+Fonte: {RSS_FEED_URL}
+
+{hashtags}
+"""
+
+    return caption.strip()
+
+
+# ============================================
+# DESENHAR TEXTO
+# ============================================
+
+def draw_multiline_text(draw, text, font, x, y, color, max_width=28):
+
+    lines = textwrap.wrap(text, width=max_width)
+
+    current_y = y
+
+    for line in lines:
+
+        bbox = draw.textbbox((0, 0), line, font=font)
+
+        text_width = bbox[2] - bbox[0]
+
+        centered_x = (1080 - text_width) / 2
+
+        draw.text(
+            (centered_x, current_y),
+            line,
+            font=font,
+            fill=color
+        )
+
+        current_y += bbox[3] - bbox[1] + 10
+
+    return current_y
+
+
+# ============================================
+# CRIAR IMAGEM
+# ============================================
+
+def create_post_image(background, entry):
+
     try:
-        # Abre a imagem de fundo
-        img = Image.open(background_path)
+
+        img = background.resize((1080, 1080)).convert("RGBA")
+
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+
+        overlay_draw = ImageDraw.Draw(overlay)
+
+        overlay_draw.rectangle(
+            [(0, 0), (1080, RECTANGLE_HEIGHT)],
+            fill=(0, 0, 0, 180)
+        )
+
+        img = Image.alpha_composite(img, overlay)
+
         draw = ImageDraw.Draw(img)
 
-        # Desenha um retângulo preto semitransparente no topo
-        w, h = img.size
-        shape = [(0, 0), (w, RECTANGLE_HEIGHT)]
-        draw.rectangle(shape, fill=(0, 0, 0, 180))  # Preto semitransparente
-
-        # Carrega a fonte
         try:
-            font = ImageFont.truetype(FONT_PATH, FONT_SIZE_TITLE)
-        except IOError:
-            print("Arquivo de fonte não encontrado, usando fonte padrão")
-            font = ImageFont.load_default()
+            title_font = ImageFont.truetype(
+                FONT_PATH,
+                FONT_SIZE_TITLE
+            )
 
-        # Prepara o texto
-        titulo = feed_entry['title']
-        corpo = feed_entry['description'].replace(
-            "Quero saber mais sobre como ter sucesso no mundo digital", ""
-        ).replace("[…]", "...")
+            body_font = ImageFont.truetype(
+                FONT_PATH,
+                FONT_SIZE_BODY
+            )
 
-        caption = f"\n\n{titulo}\n\n{corpo}\n\nfonte: {RSS_FEED_URL}\n\n#love #instagood #photooftheday #beautiful #followme #happy #picoftheday #instadaily #fun #instalike #likeforlike #follow #selfie #summer #art #fashion #food #travel #nature #fitness #beauty #workout #friends #family #instamood #photography"
+        except:
+            title_font = ImageFont.load_default()
+            body_font = ImageFont.load_default()
 
-        # Quebra e desenha o título
-        textwrapped = textwrap.wrap(titulo, width=30)
-        draw.text((10, 10), '\n'.join(textwrapped), font=font, fill=TEXT_COLOR)
+        titulo = entry.get("title", "")
 
-        # Salva a imagem
-        img.save(OUTPUT_IMAGE)
-        return caption
+        corpo = entry.get("summary", "")
+        corpo = corpo.replace("[…]", "...")
+
+        y = 40
+
+        y = draw_multiline_text(
+            draw,
+            titulo,
+            title_font,
+            40,
+            y,
+            TEXT_COLOR,
+            24
+        )
+
+        y += 20
+
+        draw_multiline_text(
+            draw,
+            corpo[:180],
+            body_font,
+            40,
+            y,
+            BODY_COLOR,
+            40
+        )
+
+        final_img = img.convert("RGB")
+
+        final_img.save(
+            OUTPUT_IMAGE,
+            quality=95
+        )
+
+        return True
+
     except Exception as e:
         print(f"Erro ao criar imagem: {e}")
-        return None
-
-def post_to_instagram(image_path, caption, username, password, two_factor_seed):
-    """Posta a imagem no Instagram usando instauto."""
-    try:
-        # Valida a chave 2FA e gera o código para depuração
-        if two_factor_seed:
-            try:
-                totp = pyotp.TOTP(two_factor_seed)
-                two_factor_code = totp.now()
-                print(f"Código 2FA gerado: {two_factor_code} (insira manualmente se solicitado)")
-            except Exception as e:
-                print(f"Erro ao gerar código 2FA: {e}")
-
-        if os.path.isfile('./.instauto.save'):
-            client = ApiClient.initiate_from_file('./.instauto.save')
-        else:
-            if not username or not password:
-                raise ValueError("Credenciais do Instagram não fornecidas")
-            # Configura o cliente
-            client = ApiClient(
-                username=username,
-                password=password
-            )
-            # Faz login sem passar two_factor_code diretamente
-            client.log_in()
-            client.save_to_disk('./.instauto.save')
-
-        post = ps.PostFeed(path=image_path, caption=caption)
-        resp = client.post_post(post, quality=80)
-        print("Sucesso: ", resp.ok)
-        return resp.ok
-    except Exception as e:
-        print(f"Erro ao postar no Instagram: {e}")
         return False
 
+
+# ============================================
+# LOGIN INSTAGRAM
+# ============================================
+
+def instagram_login():
+
+    if not INSTAGRAM_USERNAME or not INSTAGRAM_PASSWORD:
+        raise Exception(
+            "Defina INSTAGRAM_USERNAME e INSTAGRAM_PASSWORD no .env"
+        )
+
+    cl = Client()
+
+    try:
+
+        if os.path.exists(SESSION_FILE):
+
+            print("Carregando sessão existente...")
+
+            cl.load_settings(SESSION_FILE)
+
+        cl.login(
+            INSTAGRAM_USERNAME,
+            INSTAGRAM_PASSWORD
+        )
+
+        cl.dump_settings(SESSION_FILE)
+
+        print("Login realizado com sucesso")
+
+        return cl
+
+    except Exception as e:
+
+        print(f"Erro login Instagram: {e}")
+
+        if os.path.exists(SESSION_FILE):
+            os.remove(SESSION_FILE)
+
+        return None
+
+
+# ============================================
+# POSTAR
+# ============================================
+
+def post_to_instagram(client, image_path, caption):
+
+    try:
+
+        media = client.photo_upload(
+            image_path,
+            caption
+        )
+
+        print("Post publicado com sucesso")
+        print(f"Media ID: {media.id}")
+
+        return True
+
+    except Exception as e:
+
+        print(f"Erro ao postar: {e}")
+
+        return False
+
+
+# ============================================
+# MAIN
+# ============================================
+
 def main():
-    # Baixa a imagem de fundo
-    if not download_image(IMAGE_URL, "background.png"):
+
+    print("Baixando imagem...")
+    background = download_image(IMAGE_URL)
+
+    if not background:
         return
 
-    # Obtém o feed RSS
-    feed = fetch_rss_feed(RSS_FEED_URL)
-    if not feed:
+    print("Lendo feed RSS...")
+    entries = fetch_feed(RSS_FEED_URL)
+
+    if not entries:
         return
 
-    # Seleciona uma entrada aleatória
-    entry = feed.entries[randint(0, len(feed.entries) - 1)]
+    entry = random.choice(entries)
 
-    # Cria a imagem com texto
-    caption = create_image_with_text("background.png", entry)
-    if not caption:
+    print("Criando imagem...")
+    success = create_post_image(background, entry)
+
+    if not success:
         return
 
-    # Posta no Instagram com as credenciais fornecidas
-    username = os.getenv("INSTAGRAM_USERNAME") or "hmr1973maia"  # Substitua pelo seu nome de usuário
-    password = os.getenv("INSTAGRAM_PASSWORD") or "Mkonji321????"  # Substitua pela sua senha
-    two_factor_seed = os.getenv("INSTAGRAM_2FA_SEED") or "BW64LFQ6L54HTGDKMED5E73J7HY46QVH"  # Substitua pela chave 2FA
-    post_to_instagram(OUTPUT_IMAGE, caption, username, password, two_factor_seed)
+    caption = prepare_caption(entry)
+
+    print("Fazendo login Instagram...")
+    client = instagram_login()
+
+    if not client:
+        return
+
+    print("Publicando post...")
+    post_to_instagram(
+        client,
+        OUTPUT_IMAGE,
+        caption
+    )
+
+    print("Finalizado")
+
+
+# ============================================
 
 if __name__ == "__main__":
     main()
