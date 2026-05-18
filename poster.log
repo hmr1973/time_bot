@@ -1,0 +1,33 @@
+2026-05-18 21:47:40,422 [INFO] ════════════════════════════════════════════════════════════
+2026-05-18 21:47:40,423 [INFO] Instagram RSS Carousel Poster Premium — iniciando
+2026-05-18 21:47:40,423 [INFO] ════════════════════════════════════════════════════════════
+2026-05-18 21:47:40,423 [INFO] Buscando feed RSS: https://sucesso.hmr1973.com/feed/
+2026-05-18 21:47:41,378 [INFO] 10 entradas encontradas.
+2026-05-18 21:47:41,380 [INFO] Entrada selecionada: Mesada sem exigências pode favorecer educação financeira, aponta estudo – Agora RN
+2026-05-18 21:47:41,769 [INFO] Imagem obtida via: RSS
+2026-05-18 21:47:46,567 [INFO] https://i.instagram.com/api/v1/launcher/sync/
+2026-05-18 21:47:47,186 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/launcher/sync/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:47:49,770 [INFO] https://i.instagram.com/api/v1/accounts/login/
+2026-05-18 21:47:53,396 [INFO] hmr1973maia [400] POST https://i.instagram.com/api/v1/accounts/login/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:47:54,952 [INFO] https://i.instagram.com/api/v1/launcher/sync/
+2026-05-18 21:47:55,217 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/launcher/sync/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:47:56,808 [INFO] https://i.instagram.com/api/v1/accounts/login/
+2026-05-18 21:47:59,567 [INFO] hmr1973maia [400] POST https://i.instagram.com/api/v1/accounts/login/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:01,440 [INFO] https://i.instagram.com/api/v1/accounts/two_factor_login/
+2026-05-18 21:48:04,806 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/accounts/two_factor_login/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:08,637 [INFO] https://i.instagram.com/api/v1/feed/reels_tray/
+2026-05-18 21:48:09,524 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/feed/reels_tray/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:13,116 [INFO] https://i.instagram.com/api/v1/feed/timeline/
+2026-05-18 21:48:15,982 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/feed/timeline/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:15,987 [INFO] Login com 2FA realizado com sucesso.
+2026-05-18 21:48:15,989 [INFO] Sessão salva em: instagrapi_session.json
+2026-05-18 21:48:17,543 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1779140895989_0_2379750460 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:18,998 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1779140897544_0_8033073928 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:20,784 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1779140898999_0_8161665844 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:22,786 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1779140900784_0_1391128628 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:24,318 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1779140902787_0_2302251513 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:29,639 [INFO] https://i.instagram.com/api/v1/media/configure_sidecar/
+2026-05-18 21:48:37,206 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/media/configure_sidecar/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:41,171 [INFO] https://i.instagram.com/api/v1/qe/expose/
+2026-05-18 21:48:41,268 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/qe/expose/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-05-18 21:48:41,269 [INFO] Carrossel publicado com sucesso. Media PK: 3900039085628100613
