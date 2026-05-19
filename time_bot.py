@@ -1,15 +1,13 @@
 
-
 """
-Instagram RSS Carousel Poster - Premium Edition
+Instagram RSS Carousel Poster - Premium Curadoria Edition (TEST MODE)
 - Lê feed RSS
-- Escolhe uma entrada
-- Extrai imagem do post ou usa fallback
+- Seleciona 5 entradas aleatórias
+- Cada slide representa 1 feed diferente
+- Destaca título + descrição + complemento
 - Sanitiza o texto
-- Gera carrossel premium com UX/CX writing
-- Previne overflow visual
-- Usa templates diferentes para capa / conteúdo / CTA
-- Publica como álbum no Instagram via instagrapi
+- Gera carrossel premium
+- Não publica enquanto publish_enabled=False
 
 Dependências:
     pip install feedparser Pillow requests pyotp instagrapi tenacity
@@ -53,10 +51,14 @@ class Config:
     session_file: Path = Path("instagrapi_session.json")
 
     rss_url: str = "https://sucesso.hmr1973.com/feed/"
+    fixed_site_text: str = "sucesso.hmr1973.com"
+
     unsplash_access_key: str = ""
     pexels_api_key: str = ""
 
     output_dir: Path = Path("carousel_output")
+    captions_file: Path = Path("captions.json")
+
     font_path: str = "Roboto-Medium.ttf"
     font_fallback: str = "arial.ttf"
     bold_font_path: str = "Roboto-Bold.ttf"
@@ -68,36 +70,64 @@ class Config:
     max_retries: int = 3
     login_delay_seconds: float = 2.0
 
-    cover_title_font_size: int = 72
-    cover_subtitle_font_size: int = 38
-    section_title_font_size: int = 54
+    title_font_size: int = 60
     body_font_size: int = 34
-    cta_title_font_size: int = 58
     small_font_size: int = 24
 
-    title_color: tuple = (255, 255, 255)
-    accent_color: tuple = (255, 170, 40)
-    body_color: tuple = (245, 245, 245)
-    muted_color: tuple = (220, 220, 220)
-    shadow_color: tuple = (0, 0, 0)
-
-    dark_overlay_alpha: int = 145
-    card_overlay: tuple = (18, 18, 18, 150)
-    cta_overlay: tuple = (255, 170, 40, 205)
-
-    caption_body_limit: int = 600
+    title_max_lines: int = 4
+    body_max_lines: int = 9
     max_slides: int = 5
+    caption_body_limit: int = 700
 
-    content_max_lines: int = 8
-    cover_title_max_lines: int = 4
-    cover_subtitle_max_lines: int = 3
-    cta_body_max_lines: int = 6
+    publish_enabled: bool = True
+
+    active_theme: str = "sunset"
+    brand_themes: dict = None
 
     hashtags: str = (
         "#marketing #digitalmarketing #sucesso #empreendedorismo "
         "#negocios #motivacao #instagram #conteudo #branding "
-        "#uxwriting #customerexperience #marketingdigital"
+        "#marketingdigital #inspiracao #negociosdigitais"
     )
+
+    def __post_init__(self):
+        if self.brand_themes is None:
+            self.brand_themes = {
+                "sunset": {
+                    "title_color": (255, 255, 255),
+                    "accent_color": (255, 170, 40),
+                    "body_color": (245, 245, 245),
+                    "muted_color": (220, 220, 220),
+                    "shadow_color": (0, 0, 0),
+                    "dark_overlay_alpha": 145,
+                    "card_overlay": (18, 18, 18, 155),
+                    "footer_color": (255, 170, 40),
+                },
+                "ocean": {
+                    "title_color": (255, 255, 255),
+                    "accent_color": (0, 200, 255),
+                    "body_color": (240, 248, 255),
+                    "muted_color": (210, 225, 235),
+                    "shadow_color": (0, 0, 0),
+                    "dark_overlay_alpha": 150,
+                    "card_overlay": (8, 20, 30, 165),
+                    "footer_color": (0, 210, 255),
+                },
+                "forest": {
+                    "title_color": (255, 255, 255),
+                    "accent_color": (92, 184, 92),
+                    "body_color": (240, 250, 240),
+                    "muted_color": (215, 230, 215),
+                    "shadow_color": (0, 0, 0),
+                    "dark_overlay_alpha": 150,
+                    "card_overlay": (12, 28, 16, 165),
+                    "footer_color": (120, 220, 120),
+                },
+            }
+
+    @property
+    def theme(self):
+        return self.brand_themes[self.active_theme]
 
 
 CFG = Config()
@@ -116,7 +146,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════════════════
-# SANITIZAÇÃO DE TEXTO
+# SANITIZAÇÃO
 # ══════════════════════════════════════════════════════════════════
 def sanitize_text(raw: str) -> str:
     if not raw:
@@ -146,12 +176,6 @@ def sanitize_text(raw: str) -> str:
     text = re.sub(r"([:])([^\s])", r"\1 \2", text)
 
     return text.strip()
-
-
-def split_sentences(text: str) -> List[str]:
-    text = sanitize_text(text)
-    parts = re.split(r'(?<=[\.\!\?])\s+', text)
-    return [p.strip() for p in parts if p.strip()]
 
 
 def smart_truncate(text: str, max_chars: int) -> str:
@@ -188,63 +212,60 @@ def fetch_rss_entries(url: str) -> list:
     return feed.entries
 
 
-def build_ux_carousel_text(entry) -> dict:
+def pick_random_entries(entries: list, count: int = 5) -> list:
+    if len(entries) <= count:
+        return entries
+    return random.sample(entries, count)
+
+
+def extract_entry_text(entry) -> dict:
     title = sanitize_text(entry.get("title", "Sem título"))
-    raw_body = sanitize_text(entry.get("summary") or entry.get("description") or "")
-    raw_body = raw_body.replace("Quero saber mais sobre como ter sucesso no mundo digital", "").strip()
+    summary = sanitize_text(entry.get("summary") or entry.get("description") or "")
+    summary = summary.replace("Quero saber mais sobre como ter sucesso no mundo digital", "").strip()
 
-    sentences = split_sentences(raw_body)
+    complement = ""
+    if len(summary) > 260:
+        summary_short = smart_truncate(summary, 260)
+        complement = smart_truncate(summary[260:], 180)
+    else:
+        summary_short = summary
+        complement = ""
 
-    short_intro = sentences[0] if len(sentences) > 0 else smart_truncate(raw_body, 180)
-    main_point = sentences[1] if len(sentences) > 1 else smart_truncate(raw_body, 180)
-    practical = sentences[2] if len(sentences) > 2 else "Transforme a informação em uma ação simples, objetiva e consistente."
-    reflection = sentences[3] if len(sentences) > 3 else "Quando a mensagem é clara, a experiência melhora e a decisão fica mais fácil."
-
-    slides = [
-        {
-            "type": "cover",
-            "title": smart_truncate(title, 110),
-            "body": "Deslize e veja a ideia principal de forma rápida, clara e útil."
-        },
-        {
-            "type": "content",
-            "title": "O problema",
-            "body": smart_truncate(
-                f"Muita gente consome conteúdo, mas não transforma isso em ação. {short_intro}",
-                280
-            )
-        },
-        {
-            "type": "content",
-            "title": "O insight",
-            "body": smart_truncate(
-                f"A ideia central é simples: {main_point}",
-                260
-            )
-        },
-        {
-            "type": "content",
-            "title": "Na prática",
-            "body": smart_truncate(
-                f"Como aplicar isso no dia a dia: {practical}",
-                260
-            )
-        },
-        {
-            "type": "cta",
-            "title": "Agora é com você",
-            "body": smart_truncate(
-                f"{reflection} Salve este conteúdo e compartilhe com alguém que pode se beneficiar desta mensagem.",
-                240
-            )
-        },
-    ]
+    if not complement and entry.get("link"):
+        complement = f"Leia mais em nosso site."
 
     return {
-        "title": title,
-        "body": raw_body,
-        "slides": slides[:CFG.max_slides],
+        "title": smart_truncate(title, 120),
+        "summary": summary_short,
+        "complement": complement,
+        "link": entry.get("link", ""),
     }
+
+
+def build_carousel_data(entries: list) -> dict:
+    slides = []
+    for entry in entries[:CFG.max_slides]:
+        item = extract_entry_text(entry)
+        slides.append({
+            "title": item["title"],
+            "summary": item["summary"],
+            "complement": item["complement"],
+            "link": item["link"],
+        })
+
+    return {
+        "slides": slides,
+        "caption": build_caption_from_entries(slides),
+    }
+
+
+def build_caption_from_entries(slides: list) -> str:
+    lines = ["Confira 5 conteúdos selecionados para você:\n"]
+    for idx, slide in enumerate(slides, start=1):
+        lines.append(f"{idx}. {slide['title']}")
+    lines.append(f"\nAcesse: {CFG.fixed_site_text}\n")
+    lines.append(CFG.hashtags)
+    return "\n".join(lines)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -259,7 +280,7 @@ def open_image_from_url(url: str) -> Optional[Image.Image]:
         return None
 
 
-def fetch_image_from_rss_entry(entry) -> Optional[Image.Image]:
+def fetch_image_from_entry(entry) -> Optional[Image.Image]:
     for media in getattr(entry, "media_content", []):
         img = open_image_from_url(media.get("url", ""))
         if img:
@@ -314,17 +335,16 @@ def fetch_image_from_pexels(keyword: str) -> Optional[Image.Image]:
         return None
 
 
-def fetch_image_picsum() -> Image.Image:
-    seed = random.randint(1, 99999)
-    url = f"https://picsum.photos/seed/{seed}/{CFG.image_width}/{CFG.image_height}"
+def fetch_image_picsum(seed_value: int) -> Image.Image:
+    url = f"https://picsum.photos/seed/{seed_value}/{CFG.image_width}/{CFG.image_height}"
     return Image.open(io.BytesIO(fetch_url_bytes(url))).convert("RGB")
 
 
-def get_best_image(entry) -> Image.Image:
+def get_best_image_for_entry(entry, seed_value: int) -> Image.Image:
     keyword = sanitize_text((entry.get("title") or "marketing").split()[0])
 
     for source, func, args in [
-        ("RSS", fetch_image_from_rss_entry, (entry,)),
+        ("RSS", fetch_image_from_entry, (entry,)),
         ("Unsplash", fetch_image_from_unsplash, (keyword,)),
         ("Pexels", fetch_image_from_pexels, (keyword,)),
     ]:
@@ -334,7 +354,7 @@ def get_best_image(entry) -> Image.Image:
             return img
 
     log.info("Usando Picsum como fallback.")
-    return fetch_image_picsum()
+    return fetch_image_picsum(seed_value)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -355,36 +375,44 @@ def load_font(size: int, bold: bool = False):
 
 
 # ══════════════════════════════════════════════════════════════════
-# LAYOUT HELPERS
+# LAYOUT
 # ══════════════════════════════════════════════════════════════════
-def smart_crop(image: Image.Image) -> Image.Image:
-    tw, th = CFG.image_width, CFG.image_height
+def smart_crop(image: Image.Image, target_w: int, target_h: int) -> Image.Image:
     src_ratio = image.width / image.height
-    tgt_ratio = tw / th
+    tgt_ratio = target_w / target_h
 
     if src_ratio > tgt_ratio:
-        new_h = th
-        new_w = int(image.width * th / image.height)
+        new_h = target_h
+        new_w = int(image.width * target_h / image.height)
     else:
-        new_w = tw
-        new_h = int(image.height * tw / image.width)
+        new_w = target_w
+        new_h = int(image.height * target_w / image.width)
 
     image = image.resize((new_w, new_h), Image.LANCZOS)
-    left = (new_w - tw) // 2
-    top = (new_h - th) // 2
-    return image.crop((left, top, left + tw, top + th))
+    left = (new_w - target_w) // 2
+    top = (new_h - target_h) // 2
+    return image.crop((left, top, left + target_w, top + target_h))
 
 
 def create_base_slide(background: Image.Image) -> Image.Image:
-    bg = smart_crop(background.copy())
+    bg = smart_crop(background.copy(), CFG.image_width, CFG.image_height)
     bg = bg.filter(ImageFilter.GaussianBlur(radius=1.2))
 
-    overlay = Image.new("RGBA", bg.size, (0, 0, 0, CFG.dark_overlay_alpha))
+    overlay = Image.new("RGBA", bg.size, (0, 0, 0, CFG.theme["dark_overlay_alpha"]))
     base = Image.alpha_composite(bg.convert("RGBA"), overlay)
     return base.convert("RGB")
 
 
-def draw_shadow_text(draw, position, text, font, fill, shadow_fill=(0, 0, 0), offset=2):
+def draw_glass_card(base: Image.Image, box: Tuple[int, int, int, int], fill: Tuple[int, int, int, int]):
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    draw.rounded_rectangle(box, radius=36, fill=fill)
+    return Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
+
+
+def draw_shadow_text(draw, position, text, font, fill, shadow_fill=None, offset=2):
+    if shadow_fill is None:
+        shadow_fill = CFG.theme["shadow_color"]
     x, y = position
     draw.text((x + offset, y + offset), text, font=font, fill=shadow_fill)
     draw.text((x, y), text, font=font, fill=fill)
@@ -443,164 +471,86 @@ def draw_progress_bar(draw, current: int, total: int, x: int, y: int, width: int
     for i in range(total):
         x1 = x + i * (segment_width + gap)
         x2 = x1 + segment_width
-        fill = CFG.accent_color if i < current else (255, 255, 255, 80)
+        fill = CFG.theme["accent_color"] if i < current else (255, 255, 255, 80)
         draw.rounded_rectangle([(x1, y), (x2, y + height)], radius=height // 2, fill=fill)
 
 
-def draw_glass_card(base: Image.Image, box: Tuple[int, int, int, int], fill: Tuple[int, int, int, int]):
-    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    draw.rounded_rectangle(box, radius=36, fill=fill)
-    return Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
-
-
-# ══════════════════════════════════════════════════════════════════
-# TEMPLATES
-# ══════════════════════════════════════════════════════════════════
-def create_cover_slide(background: Image.Image, slide_data: dict, index: int, total: int) -> Image.Image:
+def create_feed_slide(background: Image.Image, slide_data: dict, index: int, total: int) -> Image.Image:
     base = create_base_slide(background)
-    base = draw_glass_card(base, (55, 105, 1025, 1180), (18, 18, 18, 118))
-    draw = ImageDraw.Draw(base)
-
-    w, h = base.size
-    margin = 90
-    content_width = w - (margin * 2)
-
-    title_font = load_font(CFG.cover_title_font_size, bold=True)
-    subtitle_font = load_font(CFG.cover_subtitle_font_size)
-    small_font = load_font(CFG.small_font_size)
-
-    draw_progress_bar(draw, index, total, margin, 58, 500, 12)
-
-    badge_text = "CARROSSEL"
-    draw.rounded_rectangle([(margin, 95), (margin + 190, 145)], radius=20, fill=CFG.accent_color)
-    draw_shadow_text(draw, (margin + 26, 106), badge_text, small_font, (20, 20, 20))
-
-    title_lines = fit_text_lines(draw, slide_data["title"], title_font, content_width - 40, CFG.cover_title_max_lines)
-    subtitle_lines = fit_text_lines(draw, slide_data["body"], subtitle_font, content_width - 40, CFG.cover_subtitle_max_lines)
-
-    y = 240
-    y = draw_lines(draw, title_lines, title_font, margin, y, 18, CFG.title_color)
-    y += 36
-    y = draw_lines(draw, subtitle_lines, subtitle_font, margin, y, 16, CFG.body_color)
-
-    footer = "Deslize para continuar"
-    draw_shadow_text(draw, (margin, h - 120), footer, small_font, CFG.accent_color)
-    draw_shadow_text(draw, (w - 130, h - 120), f"{index}/{total}", small_font, CFG.muted_color)
-
-    return base
-
-
-def create_content_slide(background: Image.Image, slide_data: dict, index: int, total: int) -> Image.Image:
-    base = create_base_slide(background)
-    base = draw_glass_card(base, (60, 120, 1020, 1180), CFG.card_overlay)
+    base = draw_glass_card(base, (60, 120, 1020, 1180), CFG.theme["card_overlay"])
     draw = ImageDraw.Draw(base)
 
     w, h = base.size
     margin = 95
     content_width = w - (margin * 2)
 
-    title_font = load_font(CFG.section_title_font_size, bold=True)
+    title_font = load_font(CFG.title_font_size, bold=True)
     body_font = load_font(CFG.body_font_size)
     small_font = load_font(CFG.small_font_size)
 
     draw_progress_bar(draw, index, total, margin, 62, 500, 12)
+    draw.rounded_rectangle([(margin, 98), (margin + 190, 108)], radius=5, fill=CFG.theme["accent_color"])
 
-    draw.rounded_rectangle([(margin, 98), (margin + 170, 108)], radius=5, fill=CFG.accent_color)
+    title_lines = fit_text_lines(draw, slide_data["title"], title_font, content_width, CFG.title_max_lines)
 
-    title_lines = fit_text_lines(draw, slide_data["title"], title_font, content_width, 2)
-    body_lines = fit_text_lines(draw, slide_data["body"], body_font, content_width, CFG.content_max_lines)
+    body_text = slide_data["summary"]
+    if slide_data["complement"]:
+        body_text = f"{body_text}\n\n{slide_data['complement']}"
 
-    y = 155
-    y = draw_lines(draw, title_lines, title_font, margin, y, 14, CFG.title_color)
-    y += 32
+    body_lines = fit_text_lines(draw, body_text, body_font, content_width, CFG.body_max_lines)
 
-    y = draw_lines(draw, body_lines, body_font, margin, y, 16, CFG.body_color)
+    y = 160
+    y = draw_lines(draw, title_lines, title_font, margin, y, 14, CFG.theme["title_color"])
+    y += 30
+    draw_lines(draw, body_lines, body_font, margin, y, 16, CFG.theme["body_color"])
 
-    footer = "Leitura rápida, clara e útil"
-    draw_shadow_text(draw, (margin, h - 105), footer, small_font, CFG.accent_color)
-    draw_shadow_text(draw, (w - 130, h - 105), f"{index}/{total}", small_font, CFG.muted_color)
-
-    return base
-
-
-def create_cta_slide(background: Image.Image, slide_data: dict, index: int, total: int) -> Image.Image:
-    base = create_base_slide(background)
-    base = draw_glass_card(base, (70, 190, 1010, 1160), CFG.cta_overlay)
-    draw = ImageDraw.Draw(base)
-
-    w, h = base.size
-    margin = 110
-    content_width = w - (margin * 2)
-
-    title_font = load_font(CFG.cta_title_font_size, bold=True)
-    body_font = load_font(CFG.body_font_size)
-    small_font = load_font(CFG.small_font_size)
-
-    draw_progress_bar(draw, index, total, margin, 72, 500, 12)
-
-    title_lines = fit_text_lines(draw, slide_data["title"], title_font, content_width, 2)
-    body_lines = fit_text_lines(draw, slide_data["body"], body_font, content_width, CFG.cta_body_max_lines)
-
-    y = 320
-    y = draw_lines(draw, title_lines, title_font, margin, y, 16, (18, 18, 18))
-    y += 34
-    y = draw_lines(draw, body_lines, body_font, margin, y, 18, (28, 28, 28))
-
-    draw.rounded_rectangle(
-        [(margin, h - 185), (margin + 420, h - 115)],
-        radius=24,
-        fill=(28, 28, 28)
-    )
-    draw_shadow_text(draw, (margin + 28, h - 166), "Salve e compartilhe este post", body_font, (255, 255, 255))
-    draw_shadow_text(draw, (w - 130, h - 105), f"{index}/{total}", small_font, (28, 28, 28))
+    footer = CFG.fixed_site_text
+    draw_shadow_text(draw, (margin, h - 105), footer, small_font, CFG.theme["footer_color"])
+    draw_shadow_text(draw, (w - 130, h - 105), f"{index}/{total}", small_font, CFG.theme["muted_color"])
 
     return base
 
 
-def create_slide(background: Image.Image, slide_data: dict, index: int, total: int) -> Image.Image:
-    slide_type = slide_data["type"]
-
-    if slide_type == "cover":
-        return create_cover_slide(background, slide_data, index, total)
-    if slide_type == "cta":
-        return create_cta_slide(background, slide_data, index, total)
-    return create_content_slide(background, slide_data, index, total)
-
-
 # ══════════════════════════════════════════════════════════════════
-# CAROUSEL BUILD
+# GERAÇÃO
 # ══════════════════════════════════════════════════════════════════
-def build_caption(carousel_data: dict) -> str:
-    title = sanitize_text(carousel_data["title"])
-    body = smart_truncate(carousel_data["body"], CFG.caption_body_limit)
-
-    return (
-        f"{title}\n\n"
-        f"{body}\n\n"
-        "Salve este carrossel para revisar depois.\n\n"
-        f"{CFG.hashtags}"
-    )
-
-
-def generate_carousel(background: Image.Image, carousel_data: dict) -> tuple[list[Path], str]:
+def generate_carousel(entries: list) -> tuple[list[Path], str]:
     CFG.output_dir.mkdir(parents=True, exist_ok=True)
 
-    slides = carousel_data["slides"][:CFG.max_slides]
+    carousel_data = build_carousel_data(entries)
     paths = []
 
-    for idx, slide in enumerate(slides, start=1):
-        slide_img = create_slide(background, slide, idx, len(slides))
+    for idx, entry in enumerate(entries[:CFG.max_slides], start=1):
+        bg = get_best_image_for_entry(entry, seed_value=idx * 999)
+        slide_data = carousel_data["slides"][idx - 1]
+        slide_img = create_feed_slide(bg, slide_data, idx, len(carousel_data["slides"]))
         path = CFG.output_dir / f"slide_{idx}.jpg"
         slide_img.save(path, format="JPEG", quality=93, optimize=True)
         paths.append(path)
 
-    caption = build_caption(carousel_data)
-    return paths, caption
+    return paths, carousel_data["caption"]
+
+
+def save_captions_manifest(carousel_paths: list[Path], carousel_caption: str):
+    data = {
+        "mode": "test_only",
+        "site": CFG.fixed_site_text,
+        "theme": CFG.active_theme,
+        "carousel": {
+            "slides": [str(p) for p in carousel_paths],
+            "caption": carousel_caption,
+        },
+    }
+
+    CFG.captions_file.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    log.info("Manifesto salvo em: %s", CFG.captions_file)
 
 
 # ══════════════════════════════════════════════════════════════════
-# LOGIN INSTAGRAM
+# LOGIN / PUBLICAÇÃO
 # ══════════════════════════════════════════════════════════════════
 def build_totp_code() -> Optional[str]:
     seed = (CFG.two_factor_seed or "").strip().upper().replace(" ", "")
@@ -692,15 +642,11 @@ def get_instagram_client() -> Client:
     return cl
 
 
-# ══════════════════════════════════════════════════════════════════
-# PUBLICAÇÃO
-# ══════════════════════════════════════════════════════════════════
-@retry(
-    stop=stop_after_attempt(2),
-    wait=wait_exponential(multiplier=3, min=10, max=30),
-    reraise=True,
-)
 def publish_carousel_to_instagram(paths: List[Path], caption: str) -> bool:
+    if not CFG.publish_enabled:
+        log.info("Modo teste ativo: publicação desabilitada.")
+        return True
+
     cl = get_instagram_client()
     media = cl.album_upload(paths=[str(p) for p in paths], caption=caption)
     log.info("Carrossel publicado com sucesso. Media PK: %s", getattr(media, "pk", "N/A"))
@@ -712,37 +658,37 @@ def publish_carousel_to_instagram(paths: List[Path], caption: str) -> bool:
 # ══════════════════════════════════════════════════════════════════
 def main():
     log.info("═" * 60)
-    log.info("Instagram RSS Carousel Poster Premium — iniciando")
+    log.info("Instagram RSS Carousel Curadoria — TEST MODE")
     log.info("═" * 60)
+    log.info("Tema ativo: %s", CFG.active_theme)
+    log.info("Publicação habilitada? %s", CFG.publish_enabled)
 
     try:
         entries = fetch_rss_entries(CFG.rss_url)
+        selected_entries = pick_random_entries(entries, CFG.max_slides)
     except Exception as exc:
         log.error("Erro ao buscar RSS: %s", exc)
         sys.exit(1)
 
-    entry = random.choice(entries)
-    log.info("Entrada selecionada: %s", sanitize_text(entry.get("title", "N/A")))
-
     try:
-        background = get_best_image(entry)
-    except Exception as exc:
-        log.error("Erro ao obter imagem: %s", exc)
-        sys.exit(1)
-
-    try:
-        carousel_data = build_ux_carousel_text(entry)
-        paths, caption = generate_carousel(background, carousel_data)
+        carousel_paths, carousel_caption = generate_carousel(selected_entries)
+        save_captions_manifest(carousel_paths, carousel_caption)
     except Exception as exc:
         log.error("Erro ao gerar carrossel: %s", exc)
         sys.exit(1)
 
-    try:
-        ok = publish_carousel_to_instagram(paths, caption)
-        sys.exit(0 if ok else 1)
-    except Exception as exc:
-        log.error("Erro crítico na publicação: %s", exc)
-        sys.exit(1)
+    log.info("Carrossel gerado com %d slides.", len(carousel_paths))
+    log.info("Arquivos prontos para validação visual.")
+
+    if CFG.publish_enabled:
+        try:
+            publish_carousel_to_instagram(carousel_paths, carousel_caption)
+        except Exception as exc:
+            log.error("Erro crítico na publicação: %s", exc)
+            sys.exit(1)
+
+    log.info("Processo finalizado com sucesso.")
+    sys.exit(0)
 
 
 if __name__ == "__main__":
