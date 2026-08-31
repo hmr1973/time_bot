@@ -31,3 +31,40 @@
 2026-05-18 21:48:41,171 [INFO] https://i.instagram.com/api/v1/qe/expose/
 2026-05-18 21:48:41,268 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/qe/expose/ (428.0.0.47.67, Google/google Pixel 8 Pro)
 2026-05-18 21:48:41,269 [INFO] Carrossel publicado com sucesso. Media PK: 3900039085628100613
+2026-08-31 21:41:42,489 [INFO] ════════════════════════════════════════════════════════════
+2026-08-31 21:41:42,490 [INFO] Instagram RSS Carousel Curadoria — TEST MODE
+2026-08-31 21:41:42,490 [INFO] ════════════════════════════════════════════════════════════
+2026-08-31 21:41:42,490 [INFO] Tema ativo: sunset
+2026-08-31 21:41:42,491 [INFO] Publicação habilitada? True
+2026-08-31 21:41:42,491 [INFO] Buscando feed RSS: https://sucesso.hmr1973.com/feed/
+2026-08-31 21:41:43,463 [INFO] 10 entradas encontradas.
+2026-08-31 21:42:47,497 [INFO] Usando Picsum como fallback.
+2026-08-31 21:43:37,018 [INFO] ════════════════════════════════════════════════════════════
+2026-08-31 21:43:37,018 [INFO] Instagram RSS Carousel Curadoria — TEST MODE
+2026-08-31 21:43:37,019 [INFO] ════════════════════════════════════════════════════════════
+2026-08-31 21:43:37,019 [INFO] Tema ativo: sunset
+2026-08-31 21:43:37,019 [INFO] Publicação habilitada? True
+2026-08-31 21:43:37,019 [INFO] Buscando feed RSS: https://sucesso.hmr1973.com/feed/
+2026-08-31 21:43:37,837 [INFO] 10 entradas encontradas.
+2026-08-31 21:44:21,582 [INFO] Usando Picsum como fallback.
+2026-08-31 21:44:28,397 [INFO] Usando Picsum como fallback.
+2026-08-31 21:44:53,954 [INFO] Usando Picsum como fallback.
+2026-08-31 21:45:38,648 [INFO] Usando Picsum como fallback.
+2026-08-31 21:46:03,466 [INFO] Usando Picsum como fallback.
+2026-08-31 21:46:04,594 [INFO] Manifesto salvo em: captions.json
+2026-08-31 21:46:04,594 [INFO] Carrossel gerado com 5 slides.
+2026-08-31 21:46:04,594 [INFO] Arquivos prontos para validação visual.
+2026-08-31 21:46:04,595 [INFO] Sessão restaurada com sucesso.
+2026-08-31 21:46:08,249 [INFO] https://i.instagram.com/api/v1/feed/timeline/
+2026-08-31 21:46:10,690 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/feed/timeline/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:12,366 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1788212770705_0_5866632395 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:14,008 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1788212772367_0_8721561354 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:15,690 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1788212774008_0_2992813185 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:17,179 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1788212775691_0_4014413212 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:19,285 [INFO] hmr1973maia [200] POST https://i.instagram.com/rupload_igphoto/1788212777180_0_2457437129 (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:25,198 [INFO] https://i.instagram.com/api/v1/media/configure_sidecar/
+2026-08-31 21:46:33,220 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/media/configure_sidecar/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:35,309 [INFO] https://i.instagram.com/api/v1/qe/expose/
+2026-08-31 21:46:35,702 [INFO] hmr1973maia [200] POST https://i.instagram.com/api/v1/qe/expose/ (428.0.0.47.67, Google/google Pixel 8 Pro)
+2026-08-31 21:46:35,703 [INFO] Carrossel publicado com sucesso. Media PK: 3976139493493533888
+2026-08-31 21:46:35,704 [INFO] Processo finalizado com sucesso.

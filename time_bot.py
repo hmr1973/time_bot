@@ -336,7 +336,8 @@ def fetch_image_from_pexels(keyword: str) -> Optional[Image.Image]:
 
 
 def fetch_image_picsum(seed_value: int) -> Image.Image:
-    url = f"https://picsum.photos/seed/{seed_value}/{CFG.image_width}/{CFG.image_height}"
+    #url = f"https://picsum.photos/seed/{seed_value}/{CFG.image_width}/{CFG.image_height}"
+    url = f"https://loremflickr.com/1200/1200/business,office/all"
     return Image.open(io.BytesIO(fetch_url_bytes(url))).convert("RGB")
 
 
